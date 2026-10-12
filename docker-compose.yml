@@ -1,0 +1,49 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-metering}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-metering}
+      POSTGRES_DB: ${POSTGRES_DB:-metering}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  service:
+    build: ./service
+    environment:
+      DATABASE_URL: ${DATABASE_URL:-postgres://metering:metering@postgres:5432/metering}
+      PORT: ${PORT:-3000}
+      DB_POOL_MAX: ${DB_POOL_MAX:-20}
+      DB_CONNECT_TIMEOUT_MS: ${DB_CONNECT_TIMEOUT_MS:-10000}
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ADMIN_KEY: ${ADMIN_KEY:-dev-only-admin-key-change-me-0000000000}
+    ports:
+      - "50000:${PORT:-3000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:$${PORT}/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  client:
+    build: ./client
+    environment:
+      # Server-side only: the browser never sees these.
+      SERVICE_URL: http://service:${PORT:-3000}
+      ADMIN_KEY: ${ADMIN_KEY:-dev-only-admin-key-change-me-0000000000}
+    ports:
+      - "60000:3000"
+    depends_on:
+      service:
+        condition: service_healthy
+
+volumes:
+  pgdata:

@@ -1,0 +1,11 @@
+{
+  "name": "usage-metering",
+  "private": true,
+  "scripts": {
+    "test": "npm run typecheck && npm --prefix service test && npm --prefix client test",
+    "up": "docker compose up --build",
+    "down": "docker compose down",
+    "loadtest": "bash loadtest/run.sh",
+    "typecheck": "npm --prefix service run typecheck && npm --prefix client run typecheck"
+  }
+}

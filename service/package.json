@@ -1,0 +1,34 @@
+{
+  "name": "usage-metering-service",
+  "private": true,
+  "type": "module",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "dev": "tsx watch src/server.ts",
+    "build": "tsc",
+    "start": "node dist/server.js",
+    "test": "vitest run --exclude 'test/concurrency/**' && vitest run test/concurrency",
+    "db:generate": "drizzle-kit generate",
+    "typecheck": "tsc --noEmit && tsc -p tsconfig.test.json"
+  },
+  "dependencies": {
+    "@fastify/swagger": "9.9.2",
+    "@fastify/swagger-ui": "6.1.2",
+    "drizzle-orm": "0.45.4",
+    "fastify": "5.12.7",
+    "fastify-type-provider-zod": "7.0.0",
+    "pg": "8.23.1",
+    "zod": "4.6.7"
+  },
+  "devDependencies": {
+    "@testcontainers/postgresql": "12.2.1",
+    "@types/node": "24.19.2",
+    "@types/pg": "8.23.1",
+    "drizzle-kit": "0.31.11",
+    "tsx": "4.23.15",
+    "typescript": "7.0.2",
+    "vitest": "5.0.4"
+  }
+}
