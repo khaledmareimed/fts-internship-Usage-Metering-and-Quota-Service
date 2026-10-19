@@ -1,0 +1,32 @@
+.accepted,
+.rejected {
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  border: 1px solid;
+}
+
+.accepted {
+  background: var(--ok-bg);
+  border-color: var(--ok);
+}
+
+.rejected {
+  background: var(--bad-bg);
+  border-color: var(--bad);
+}
+
+.summary {
+  margin: 0;
+  font-weight: 600;
+}
+
+.rules {
+  margin: 8px 0 0;
+  padding-left: 20px;
+}
+
+.totals {
+  margin: 8px 0 0;
+  font-size: 0.875rem;
+  color: var(--muted);
+}

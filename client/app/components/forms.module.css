@@ -1,0 +1,92 @@
+.stack {
+  display: grid;
+  gap: 24px;
+}
+
+.form {
+  display: grid;
+  gap: 12px;
+}
+
+.heading {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+}
+
+.field {
+  display: grid;
+  gap: 4px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  /* let the column shrink: a <select> is otherwise as wide as its longest option */
+  min-width: 0;
+}
+
+.field select,
+.field input {
+  font: inherit;
+  font-weight: 400;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--input-bg);
+  color: var(--text);
+  min-height: 44px;
+  width: 100%;
+  min-width: 0;
+}
+
+.primary,
+.secondary {
+  font: inherit;
+  font-weight: 600;
+  min-height: 44px;
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  cursor: pointer;
+  border: 1px solid var(--accent);
+}
+
+.primary {
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+.secondary {
+  background: transparent;
+  color: var(--accent);
+}
+
+.primary:disabled,
+.secondary:disabled {
+  opacity: 0.6;
+  cursor: progress;
+}
+
+.primary:focus-visible,
+.secondary:focus-visible,
+.field select:focus-visible,
+.field input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+}
+
+.ok,
+.error {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.ok {
+  color: var(--ok);
+}
+
+.error {
+  color: var(--bad);
+}
