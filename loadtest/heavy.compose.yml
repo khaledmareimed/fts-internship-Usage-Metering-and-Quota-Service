@@ -1,0 +1,46 @@
+# Independent stack: no published ports and no production database connection.
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: metering
+      POSTGRES_PASSWORD: loadtest-only
+      POSTGRES_DB: metering
+    volumes:
+      - heavy-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U metering -d metering"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  service:
+    build:
+      context: ../service
+      network: ${HEAVY_BUILD_NETWORK:-default}
+    environment:
+      DATABASE_URL: postgres://metering:loadtest-only@postgres:5432/metering
+      ADMIN_KEY: ${HEAVY_ADMIN_KEY:?Set by heavy.sh}
+      PORT: 3000
+      DB_POOL_MAX: 20
+      LOG_LEVEL: info
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1:3000/health || exit 1"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+  k6:
+    image: grafana/k6:2.2.0
+    profiles: [load]
+    user: "${HEAVY_UID:-0}:${HEAVY_GID:-0}"
+    environment:
+      BASE_URL: http://service:3000
+      ADMIN_KEY: ${HEAVY_ADMIN_KEY:?Set by heavy.sh}
+      VUS: ${VUS:-200}
+      DURATION_SECONDS: ${DURATION_SECONDS:-90}
+    volumes:
+      - .:/loadtest
+volumes:
+  heavy-data:
