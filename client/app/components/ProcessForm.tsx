@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState } from 'react';
+import { type ChangeEvent, useActionState, useState } from 'react';
 import { processDocument } from '../functions/actions';
 import { IDLE, type ProcessState } from '../types/state';
 import { Decision } from './Decision';
@@ -12,6 +12,8 @@ interface Props {
 
 export function ProcessForm({ users }: Props) {
   const [state, action, pending] = useActionState<ProcessState, FormData>(processDocument, IDLE);
+  const [requestId, setRequestId] = useState<string>('');
+
   return (
     <form action={action} className={styles.form}>
       <div className={styles.row}>
@@ -30,6 +32,21 @@ export function ProcessForm({ users }: Props) {
           <input name="units" type="number" min={1} step={1} defaultValue={10} required inputMode="numeric" />
         </label>
       </div>
+
+      <div className={styles.row}>
+        <label className={styles.field}>
+          <span>Request ID (Optional — test retry idempotency)</span>
+          <input
+            name="requestId"
+            type="text"
+            value={requestId}
+            onChange={(e: ChangeEvent<HTMLInputElement>) => setRequestId(e.target.value)}
+            placeholder="Auto-generated if empty"
+            maxLength={128}
+          />
+        </label>
+      </div>
+
       <button type="submit" className={styles.primary} disabled={pending}>
         {pending ? 'Processing…' : 'Process document'}
       </button>

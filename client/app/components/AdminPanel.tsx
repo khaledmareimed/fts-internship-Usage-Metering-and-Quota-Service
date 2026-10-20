@@ -1,14 +1,19 @@
 'use client';
 
-import { useActionState } from 'react';
+import { type ChangeEvent, useActionState, useState } from 'react';
 import type { Plan } from '../../types/api';
-import { editDemoPlan, switchUserPlan } from '../functions/actions';
+import {
+  createCustomPlanAction,
+  editPlanLimits,
+  switchAccountPlan,
+} from '../functions/actions';
 import { type FormState, IDLE } from '../types/state';
 import styles from './forms.module.css';
 
 interface Props {
-  users: { userId: string; name: string; planId: string }[];
-  userPlans: Plan[];
+  currentAccountPlanId: string;
+  accountPlans: Plan[];
+  customPlans: Plan[];
   demoPlan: Plan;
 }
 
@@ -17,63 +22,158 @@ function Feedback({ state }: { state: FormState }) {
   return <p className={state.status === 'ok' ? styles.ok : styles.error}>{state.message}</p>;
 }
 
-export function AdminPanel({ users, userPlans, demoPlan }: Props) {
-  const [switchState, switchAction, switching] = useActionState<FormState, FormData>(switchUserPlan, IDLE);
-  const [planState, planAction, saving] = useActionState<FormState, FormData>(editDemoPlan, IDLE);
+export function AdminPanel({
+  currentAccountPlanId,
+  accountPlans,
+  customPlans,
+  demoPlan,
+}: Props) {
+  const [switchAccState, switchAccAction, switchingAcc] = useActionState<FormState, FormData>(
+    switchAccountPlan,
+    IDLE
+  );
+  const [createPlanState, createPlanAction, creatingPlan] = useActionState<FormState, FormData>(
+    createCustomPlanAction,
+    IDLE
+  );
+  const [editPlanState, editPlanAction, editingPlan] = useActionState<FormState, FormData>(
+    editPlanLimits,
+    IDLE
+  );
+
+  const editablePlans = customPlans.length > 0 ? customPlans : [demoPlan];
+  const [selectedEditPlanId, setSelectedEditPlanId] = useState<string>(editablePlans[0]?.planId ?? '');
+  const activeEditPlan = editablePlans.find((p) => p.planId === selectedEditPlanId) ?? editablePlans[0];
 
   return (
     <div className={styles.stack}>
-      <form action={switchAction} className={styles.form}>
-        <h3 className={styles.heading}>Switch a user's plan</h3>
+      {/* 1. Switch Company Plan */}
+      <form action={switchAccAction} className={styles.form}>
+        <h3 className={styles.heading}>Switch company plan</h3>
         <div className={styles.row}>
           <label className={styles.field}>
-            <span>User</span>
-            <select name="userId" defaultValue={users[0]?.userId}>
-              {users.map((u) => (
-                <option key={u.userId} value={u.userId}>
-                  {u.name} ({userPlans.find((p) => p.planId === u.planId)?.name ?? 'custom'})
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className={styles.field}>
-            <span>New plan</span>
-            <select name="planId" defaultValue={userPlans[0]?.planId}>
-              {userPlans.map((p) => (
+            <span>Account plan</span>
+            <select name="planId" defaultValue={currentAccountPlanId}>
+              {accountPlans.map((p) => (
                 <option key={p.planId} value={p.planId}>
-                  {p.name} ({p.monthlyLimit.toLocaleString('en-US')}/mo)
+                  {p.name} ({p.monthlyLimit.toLocaleString('en-US')}/mo, {p.perRequestLimit}/req)
                 </option>
               ))}
             </select>
           </label>
         </div>
-        <button type="submit" className={styles.secondary} disabled={switching}>
-          {switching ? 'Saving…' : 'Switch plan'}
+        <button type="submit" className={styles.secondary} disabled={switchingAcc}>
+          {switchingAcc ? 'Switching…' : 'Switch company plan'}
         </button>
         <div aria-live="polite">
-          <Feedback state={switchState} />
+          <Feedback state={switchAccState} />
         </div>
       </form>
 
-      <form action={planAction} className={styles.form}>
-        <h3 className={styles.heading}>Edit “{demoPlan.name}” (company plan)</h3>
+      {/* 2. Create Custom Plan */}
+      <form action={createPlanAction} className={styles.form}>
+        <h3 className={styles.heading}>Create custom plan</h3>
+        <div className={styles.row}>
+          <label className={styles.field}>
+            <span>Plan name</span>
+            <input name="name" type="text" placeholder="e.g. Enterprise Tier" required maxLength={100} />
+          </label>
+          <label className={styles.field}>
+            <span>Scope type</span>
+            <select name="type" defaultValue="user">
+              <option value="user">User plan</option>
+              <option value="account">Account plan</option>
+            </select>
+          </label>
+        </div>
         <div className={styles.row}>
           <label className={styles.field}>
             <span>Monthly limit</span>
-            <input name="monthlyLimit" type="number" min={1} step={1} defaultValue={demoPlan.monthlyLimit} required />
+            <input name="monthlyLimit" type="number" min={1} step={1} defaultValue={5000} required />
           </label>
           <label className={styles.field}>
             <span>Per request</span>
-            <input name="perRequestLimit" type="number" min={1} step={1} defaultValue={demoPlan.perRequestLimit} required />
+            <input name="perRequestLimit" type="number" min={1} step={1} defaultValue={50} required />
+          </label>
+          <label className={styles.field}>
+            <span>Rate limit (req/min)</span>
+            <input name="rateLimitPerMinute" type="number" min={1} step={1} placeholder="Optional" />
           </label>
         </div>
-        <button type="submit" className={styles.secondary} disabled={saving}>
-          {saving ? 'Saving…' : 'Save limits'}
+        <button type="submit" className={styles.secondary} disabled={creatingPlan}>
+          {creatingPlan ? 'Creating…' : 'Create plan'}
         </button>
         <div aria-live="polite">
-          <Feedback state={planState} />
+          <Feedback state={createPlanState} />
         </div>
       </form>
+
+      {/* 3. Edit Custom Plan Limits */}
+      {activeEditPlan && (
+        <form action={editPlanAction} className={styles.form}>
+          <h3 className={styles.heading}>Edit custom plan limits</h3>
+          <div className={styles.row}>
+            <label className={styles.field}>
+              <span>Target plan</span>
+              <select
+                name="planId"
+                value={selectedEditPlanId}
+                onChange={(e: ChangeEvent<HTMLSelectElement>) => setSelectedEditPlanId(e.target.value)}
+              >
+                {editablePlans.map((p) => (
+                  <option key={p.planId} value={p.planId}>
+                    {p.name} ({p.type})
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          <div className={styles.row}>
+            <label className={styles.field}>
+              <span>Monthly limit</span>
+              <input
+                key={`${activeEditPlan.planId}-month`}
+                name="monthlyLimit"
+                type="number"
+                min={1}
+                step={1}
+                defaultValue={activeEditPlan.monthlyLimit}
+                required
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Per request</span>
+              <input
+                key={`${activeEditPlan.planId}-req`}
+                name="perRequestLimit"
+                type="number"
+                min={1}
+                step={1}
+                defaultValue={activeEditPlan.perRequestLimit}
+                required
+              />
+            </label>
+            <label className={styles.field}>
+              <span>Rate limit (req/min)</span>
+              <input
+                key={`${activeEditPlan.planId}-rate`}
+                name="rateLimitPerMinute"
+                type="number"
+                min={1}
+                step={1}
+                defaultValue={activeEditPlan.rateLimitPerMinute ?? ''}
+                placeholder="None"
+              />
+            </label>
+          </div>
+          <button type="submit" className={styles.secondary} disabled={editingPlan}>
+            {editingPlan ? 'Saving…' : 'Save limits'}
+          </button>
+          <div aria-live="polite">
+            <Feedback state={editPlanState} />
+          </div>
+        </form>
+      )}
     </div>
   );
 }
